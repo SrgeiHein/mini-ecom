@@ -2,7 +2,14 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #18181b;
+  --field-bg: #f4f4f5;
+  --field-border: #e4e4e7;
+  --field-text: #18181b;
+  --field-placeholder: #a1a1aa;
+  --field-focus: #4f46e5;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
 }
 
 @theme inline {
@@ -12,15 +19,48 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html,
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+@layer components {
+  .field-label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-zinc-500;
+  }
+
+  .field {
+    @apply block w-full rounded-lg border bg-[var(--field-bg)] px-3.5 py-2.5 text-[14px] text-[var(--field-text)] outline-none transition placeholder:text-[var(--field-placeholder)];
+    border-color: var(--field-border);
+  }
+  .field:focus {
+    background: #ffffff;
+  }
+  .field[aria-invalid='true'] {
+    border-color: #dc2626;
+  }
+
+  .btn-primary {
+    @apply inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60;
+    background: var(--primary);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3.5 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50;
+  }
 }
