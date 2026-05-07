@@ -47,6 +47,7 @@ async function main() {
       sku: `SKU-${String(n).padStart(4, '0')}`,
       name: `${category} Model ${n}`,
       description: `A reliable ${category.toLowerCase()} — item #${n} in the demo catalog.`,
+      category,
       priceCents: priceCentsFor(i),
       currency: 'USD',
       imageUrl: `https://picsum.photos/seed/product-${n}/400/400`,

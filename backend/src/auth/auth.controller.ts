@@ -29,12 +29,12 @@ const setRefreshCookie = (res: Response, token: string, maxAgeMs: number) =>
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    path: '/auth',
+    path: '/',
     maxAge: maxAgeMs,
   });
 
 const clearRefreshCookie = (res: Response) =>
-  res.clearCookie(REFRESH_COOKIE, { path: '/auth' });
+  res.clearCookie(REFRESH_COOKIE, { path: '/' });
 
 const clientIp = (req: Request): string =>
   (req.ip ?? req.socket.remoteAddress ?? '0.0.0.0').toString();

@@ -55,6 +55,7 @@ model Product {
   sku         String   @unique
   name        String
   description String
+  category    String   @default("Other")
   priceCents  Int
   currency    String   @default("USD")
   imageUrl    String?
@@ -63,5 +64,6 @@ model Product {
   updatedAt   DateTime @updatedAt
 
   @@index([createdAt, id])
+  @@index([category])
   @@map("products")
 }

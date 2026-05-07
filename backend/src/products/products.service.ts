@@ -4,6 +4,8 @@ import { PRISMA } from '../prisma/prisma.service';
 import type {
   CreateProductInput,
   PaginatedProducts,
+  ProductsStats,
+  SortOption,
   UpdateProductInput,
 } from './products.model';
 
@@ -11,15 +13,60 @@ interface ProductsDeps {
   prisma: PrismaClient;
 }
 
+interface ListParams {
+  cursor?: string;
+  limit: number;
+  q?: string;
+  sort: SortOption;
+  inStock?: boolean;
+  category?: string;
+}
+
+const orderByForSort = (sort: SortOption): Prisma.ProductOrderByWithRelationInput[] => {
+  switch (sort) {
+    case 'priceAsc':
+      return [{ priceCents: 'asc' }, { id: 'asc' }];
+    case 'priceDesc':
+      return [{ priceCents: 'desc' }, { id: 'desc' }];
+    case 'nameAsc':
+      return [{ name: 'asc' }, { id: 'asc' }];
+    case 'newest':
+    default:
+      return [{ createdAt: 'desc' }, { id: 'desc' }];
+  }
+};
+
+const buildWhere = (params: ListParams): Prisma.ProductWhereInput => {
+  const conditions: Prisma.ProductWhereInput[] = [];
+
+  if (params.q) {
+    conditions.push({
+      OR: [
+        { name: { contains: params.q, mode: 'insensitive' } },
+        { sku: { contains: params.q, mode: 'insensitive' } },
+      ],
+    });
+  }
+  if (params.inStock) {
+    conditions.push({ stock: { gt: 0 } });
+  }
+  if (params.category) {
+    conditions.push({ category: params.category });
+  }
+
+  return conditions.length === 0 ? {} : { AND: conditions };
+};
+
 async function listProducts(
   deps: ProductsDeps,
-  params: { cursor?: string; limit: number },
+  params: ListParams,
 ): Promise<PaginatedProducts<Product>> {
   const { cursor, limit } = params;
 
   const args: Prisma.ProductFindManyArgs = {
     take: limit + 1,
-    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    where: buildWhere(params),
+    orderBy: orderByForSort(params.sort),
   };
 
   if (cursor) {
@@ -35,10 +82,7 @@ async function listProducts(
   return { items, nextCursor, limit };
 }
 
-async function getProduct(
-  deps: ProductsDeps,
-  id: string,
-): Promise<Product> {
+async function getProduct(deps: ProductsDeps, id: string): Promise<Product> {
   const product = await deps.prisma.product.findUnique({ where: { id } });
   if (!product) {
     throw new NotFoundException(`Product ${id} not found`);
@@ -71,17 +115,45 @@ async function deleteProduct(
   return { id };
 }
 
+async function listCategories(
+  deps: ProductsDeps,
+): Promise<{ name: string; count: number }[]> {
+  const rows = await deps.prisma.$queryRaw<
+    { category: string; count: bigint }[]
+  >`SELECT category, COUNT(*)::bigint AS count
+    FROM products
+    GROUP BY category
+    ORDER BY category ASC`;
+  return rows.map((r) => ({ name: r.category, count: Number(r.count) }));
+}
+
+async function getStats(deps: ProductsDeps): Promise<ProductsStats> {
+  const [total, inStock, agg] = await Promise.all([
+    deps.prisma.product.count(),
+    deps.prisma.product.count({ where: { stock: { gt: 0 } } }),
+    deps.prisma.product.aggregate({
+      _min: { priceCents: true },
+      _max: { priceCents: true },
+    }),
+  ]);
+  return {
+    total,
+    inStock,
+    minPriceCents: agg._min.priceCents ?? 0,
+    maxPriceCents: agg._max.priceCents ?? 0,
+  };
+}
+
 export const PRODUCTS_SERVICE = 'PRODUCTS_SERVICE';
 
 export interface ProductsService {
-  list: (params: {
-    cursor?: string;
-    limit: number;
-  }) => Promise<PaginatedProducts<Product>>;
+  list: (params: ListParams) => Promise<PaginatedProducts<Product>>;
   get: (id: string) => Promise<Product>;
   create: (input: CreateProductInput) => Promise<Product>;
   update: (id: string, input: UpdateProductInput) => Promise<Product>;
   remove: (id: string) => Promise<{ id: string }>;
+  stats: () => Promise<ProductsStats>;
+  categories: () => Promise<{ name: string; count: number }[]>;
 }
 
 export const productsServiceProvider: FactoryProvider<ProductsService> = {
@@ -95,6 +167,8 @@ export const productsServiceProvider: FactoryProvider<ProductsService> = {
       create: (input) => createProduct(deps, input),
       update: (id, input) => updateProduct(deps, id, input),
       remove: (id) => deleteProduct(deps, id),
+      stats: () => getStats(deps),
+      categories: () => listCategories(deps),
     };
   },
 };

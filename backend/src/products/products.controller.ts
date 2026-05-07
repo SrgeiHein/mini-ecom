@@ -34,6 +34,16 @@ export class ProductsController {
     return this.products.list(query);
   }
 
+  @Get('stats')
+  stats() {
+    return this.products.stats();
+  }
+
+  @Get('categories')
+  categories() {
+    return this.products.categories();
+  }
+
   @Get(':id')
   get(@Param('id') id: string) {
     return this.products.get(id);
