@@ -39,18 +39,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: ecom
-          POSTGRES_PASSWORD: ecom
-          POSTGRES_DB: mini_ecom_test
+          POSTGRES_USER: username
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: mini-ecom
         ports:
           - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U ecom"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
     env:
-      DATABASE_URL: postgresql://ecom:ecom@localhost:5432/mini_ecom_test
+      DATABASE_URL: postgresql://username:password@localhost:5432/mini-ecom?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -59,6 +54,7 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
+      - run: npx prisma generate
       - run: npm run lint
       - run: npx tsc --noEmit -p tsconfig.build.json
       - run: npm test -- --passWithNoTests

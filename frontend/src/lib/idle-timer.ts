@@ -24,8 +24,8 @@ export function useIdleTimer({
   onActiveTick,
   activeTickMs = 5 * 60 * 1000,
 }: UseIdleTimerOptions): void {
-  const lastActivityRef = useRef<number>(Date.now());
-  const lastTickRef = useRef<number>(Date.now());
+  const lastActivityRef = useRef<number>(0);
+  const lastTickRef = useRef<number>(0);
   const onIdleRef = useRef(onIdle);
   const onTickRef = useRef(onActiveTick);
 
@@ -35,6 +35,10 @@ export function useIdleTimer({
   }, [onIdle, onActiveTick]);
 
   useEffect(() => {
+    const now = Date.now();
+    lastActivityRef.current = now;
+    lastTickRef.current = now;
+
     const markActive = () => {
       lastActivityRef.current = Date.now();
     };
@@ -44,14 +48,14 @@ export function useIdleTimer({
     }
 
     const interval = window.setInterval(() => {
-      const now = Date.now();
-      const idleFor = now - lastActivityRef.current;
+      const tickNow = Date.now();
+      const idleFor = tickNow - lastActivityRef.current;
       if (idleFor >= timeoutMs) {
         onIdleRef.current();
         return;
       }
-      if (onTickRef.current && now - lastTickRef.current >= activeTickMs) {
-        lastTickRef.current = now;
+      if (onTickRef.current && tickNow - lastTickRef.current >= activeTickMs) {
+        lastTickRef.current = tickNow;
         onTickRef.current();
       }
     }, 30_000);
