@@ -57,8 +57,9 @@ Either way, the `DATABASE_URL` in `backend/.env` (`postgresql://username:passwor
 
 ```bash
 cd backend
-npx prisma migrate deploy
-npx prisma db seed
+npm run prisma:generate
+npm run prisma:migrate
+npm run prisma:seed
 ```
 
 ### 5. Run the apps (two terminals)
