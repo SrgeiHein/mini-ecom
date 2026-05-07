@@ -16,27 +16,54 @@ A small e-commerce catalog built for the senior technical exercise — secure au
 - Node.js 20+
 - Docker (for Postgres) — or a local Postgres 16
 
-### Steps
+### 1. Env files
 
 ```bash
-# 1. Env files
 cp .env.example .env
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env.local
+```
 
-# 2. Postgres
+The defaults expect a Postgres reachable at `localhost:5432` with:
+
+```
+user:     username
+password: password
+db:       mini-ecom
+```
+
+### 2. Postgres — pick **one**
+
+**Option A — Docker (recommended, zero install):**
+
+```bash
 docker compose up -d
+```
 
-# 3. Install
+**Option B — Use your existing local Postgres** (skip if you used Docker)
+
+Make sure your Postgres server is running on `localhost:5432`, then create the user and database. Either via **pgAdmin**
+
+Either way, the `DATABASE_URL` in `backend/.env` (`postgresql://username:password@localhost:5432/mini-ecom`) connects to it.
+
+### 3. Install dependencies
+
+```bash
 (cd backend  && npm install)
 (cd frontend && npm install)
+```
 
-# 4. Database — apply migrations + seed 75 products and the demo user
+### 4. Database — apply migrations + seed 75 products and the demo user
+
+```bash
 cd backend
 npx prisma migrate deploy
 npx prisma db seed
+```
 
-# 5. Run apps (in two terminals)
+### 5. Run the apps (two terminals)
+
+```bash
 cd backend  && npm run start:dev   # http://localhost:4000
 cd frontend && npm run dev         # http://localhost:3000
 ```
@@ -55,7 +82,7 @@ demo@mini-ecom.test   /   Demo!Pass123
 
 - Functional services + factory providers — pure functions take a `deps` object; the provider closes over Prisma/Jwt/Config and returns bound methods. No inheritance.
 - Validation with **Zod** (`*.model.ts`) + a tiny `zParse(schema)` pipe. No `class-validator`.
-- **Auth:** short-lived access JWT (15 min) + opaque rotating refresh token in an `HttpOnly`, `SameSite=Lax`, `path=/` cookie. Sliding 30-minute expiry covers both *persistent session* and *idle timeout*. Refresh tokens stored only as SHA-256 hashes with rotation/revocation tracking.
+- **Auth:** short-lived access JWT (15 min) + opaque rotating refresh token in an `HttpOnly`, `SameSite=Lax`, `path=/` cookie. Sliding 30-minute expiry covers both _persistent session_ and _idle timeout_. Refresh tokens stored only as SHA-256 hashes with rotation/revocation tracking.
 - **Brute-force protection:** global rate limit + 5 rpm on `/auth/login`, plus a `LoginAttempt` table that locks email/IP after repeated failures.
 - **Cursor pagination** with `id` tiebreaker → no duplicates when products are inserted mid-scroll. `limit` clamped server-side to `[5, 50]`.
 - **Search & filter on real columns:** indexed `category` and `(createdAt, id)`; search is case-insensitive `contains` on `name` + `sku`.
